@@ -31,6 +31,7 @@ Run `build.bat` for automatic installation. A shortcut will be generated on your
 
 ### Requirements
 - CMake >3.16
+- Visual Studio 2022 (Just MSVC Compiler is required)
 - Windows 10
 
 ## Issues
