@@ -25,6 +25,14 @@
 * Undo/Redo for every operation and support for [non-linear undo](https://imgur.com/9I42fZK).
 * [More features &amp; tips](https://twitter.com/aseprite/status/1124442198651678720)
 
+## Installation
+This repository provides a script that allows you to automatically build a repository.
+Run `build.bat` for automatic installation. A shortcut will be generated on your desktop.
+
+### Requirements
+- CMake >3.16
+- Windows 10
+
 ## Issues
 
 There is a list of
