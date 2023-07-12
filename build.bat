@@ -57,7 +57,7 @@ del .\third_party\skia\skia.zip
 :: Build
 echo Building Aseprite...
 set "ninja_path=%cd%\third_party\ninja\ninja.exe"
-cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLAF_BACKEND=skia -DSKIA_DIR=.\third_party\skia -DSKIA_LIBRARY_DIR=.\third_party\skia\out\Release-x64 -DSKIA_LIBRARY=.\third_party\skia\out\Release-x64\skia.lib -S . -B build
+cmake -G Ninja -DCMAKE_MAKE_PROGRAM="%ninja_path%" -DCMAKE_BUILD_TYPE=Release -DLAF_BACKEND=skia -DSKIA_DIR=.\third_party\skia -DSKIA_LIBRARY_DIR=.\third_party\skia\out\Release-x64 -DSKIA_LIBRARY=.\third_party\skia\out\Release-x64\skia.lib -S . -B build
 cmake --build build --config Release
 
 :: Create shortcut to binary
