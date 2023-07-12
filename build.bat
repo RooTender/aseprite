@@ -56,5 +56,19 @@ del .\third_party\skia\skia.zip
 :: Build
 echo Building Aseprite...
 set "ninja_path=%cd%\third_party\ninja\ninja.exe"
-cmake -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=.\third_party\skia -DSKIA_LIBRARY_DIR=.\third_party\skia\out\Release-x64 -DSKIA_LIBRARY=.\third_party\skia\out\Release-x64\skia.lib -S . -B build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLAF_BACKEND=skia -DSKIA_DIR=.\third_party\skia -DSKIA_LIBRARY_DIR=.\third_party\skia\out\Release-x64 -DSKIA_LIBRARY=.\third_party\skia\out\Release-x64\skia.lib -S . -B build
 cmake --build build --config Release
+
+:: Create shortcut to binary
+setlocal
+set "shortcutName=Aseprite"
+set "targetPath=%cd%\build\bin\aseprite.exe"
+set "shortcutPath=%USERPROFILE%\Desktop\%shortcutName%.lnk"
+echo Set oWS = WScript.CreateObject("WScript.Shell") > "%temp%\CreateShortcut.vbs"
+echo sLinkFile = "%shortcutPath%" >> "%temp%\CreateShortcut.vbs"
+echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%temp%\CreateShortcut.vbs"
+echo oLink.TargetPath = "%targetPath%" >> "%temp%\CreateShortcut.vbs"
+echo oLink.Save >> "%temp%\CreateShortcut.vbs"
+cscript //nologo "%temp%\CreateShortcut.vbs"
+del "%temp%\CreateShortcut.vbs"
+endlocal
