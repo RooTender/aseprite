@@ -15,6 +15,7 @@ set "vs_installer=%programfiles(x86)%\Microsoft Visual Studio\Installer"
 if not exist "%vs_installer%\vswhere.exe" (
     echo Cannot detect MS Visual Studio environment.
 	echo "%vs_installer%\vswhere.exe"
+	pause
 	exit /b 2
 ) else (
 	for /f "usebackq delims=" %%i in (`"%vs_installer%\vswhere" -latest -property installationPath`) do (
