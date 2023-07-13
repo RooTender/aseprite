@@ -63,12 +63,14 @@ cmake --build build --config Release
 :: Create shortcut to binary
 setlocal
 set "shortcutName=Aseprite"
-set "targetPath=%cd%\build\bin\aseprite.exe"
-set "shortcutPath=%USERPROFILE%\Desktop\%shortcutName%.lnk"
+set "targetPath=%cd%\launcher.vbs"
+set "shortcutPath=%USERPROFILE%\Desktop\Aseprite.lnk"
+set "iconPath=%cd%\build\bin\Aseprite.exe,0"
 echo Set oWS = WScript.CreateObject("WScript.Shell") > "%temp%\CreateShortcut.vbs"
 echo sLinkFile = "%shortcutPath%" >> "%temp%\CreateShortcut.vbs"
 echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%temp%\CreateShortcut.vbs"
 echo oLink.TargetPath = "%targetPath%" >> "%temp%\CreateShortcut.vbs"
+echo oLink.IconLocation = "%iconPath%" >> "%temp%\CreateShortcut.vbs"
 echo oLink.Save >> "%temp%\CreateShortcut.vbs"
 cscript //nologo "%temp%\CreateShortcut.vbs"
 del "%temp%\CreateShortcut.vbs"
