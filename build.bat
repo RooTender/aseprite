@@ -1,5 +1,7 @@
 @echo off
 
+cd /d %~dp0
+
 :: Update and init github submodules
 echo Updating repository...
 git pull
