@@ -5,7 +5,7 @@ on: push
 jobs:
   build:
     runs-on: windows-latest
-    name: Compile project on Windows
+    name: Windows Build
 
     steps:
       - name: Checkout current branch
@@ -20,3 +20,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1.12.1
         with:
           arch: x64
+          
+      - name: Build
+        shell: cmd
+        run: build.bat
