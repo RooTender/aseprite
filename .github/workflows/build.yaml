@@ -8,7 +8,15 @@ jobs:
     name: Compile project on Windows
 
     steps:
-      - name: my-step
-        run: echo "Hello World!"
+      - name: Checkout current branch
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
 
-    
+      - name: Install cmake
+        uses: jwlawson/actions-setup-cmake@v1.12
+
+      - name: Set MSVC environment
+        uses: ilammy/msvc-dev-cmd@v1.12.1
+        with:
+          arch: x64
