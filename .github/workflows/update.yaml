@@ -1,17 +1,16 @@
-name: Update repository
+name: Greetings
 
-on:
-  schedule:
-    - cron: '0 0 * * *' # update every day at 00:00
+on: [pull_request_target, issues]
 
 jobs:
-  sync:
+  greeting:
     runs-on: ubuntu-latest
-
+    permissions:
+      issues: write
+      pull-requests: write
     steps:
-      - uses: tgymnich/fork-sync@v1.8
-        with:
-          owner: aseprite
-          base: main
-          head: main
-          
+    - uses: actions/first-interaction@v1
+      with:
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        issue-message: "Message that will be displayed on users' first issue"
+        pr-message: "Message that will be displayed on users' first pull request"
