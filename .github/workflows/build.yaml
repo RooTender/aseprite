@@ -3,8 +3,12 @@ name: Build project
 on: push
 
 jobs:
-  my-job:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: windows-latest
+    name: Compile project on Windows
+
     steps:
       - name: my-step
         run: echo "Hello World!"
+
+    
