@@ -30,9 +30,9 @@ This repository provides a script that allows you to automatically build a repos
 Run `build.bat` for automatic installation. A shortcut will be generated on your desktop.
 
 ### Requirements
+- Git
 - CMake >3.16
 - Visual Studio 2022 (Just MSVC Compiler is required)
-- Windows 10
 
 ## Issues
 
