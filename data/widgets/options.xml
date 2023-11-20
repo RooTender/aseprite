@@ -71,6 +71,8 @@
                  tooltip="@.gpu_acceleration_tooltip" />
           <check id="show_menu_bar"
 		 text="@.show_menu_bar" />
+          <check id="show_aseprite_file_dialog"
+                 text="@.show_aseprite_file_dialog" />
           <check id="show_home"
 		 text="@.show_home" />
           <check id="expand_menubar_on_mouseover"
@@ -260,6 +262,8 @@
           <check text="@.move_on_add_mode" id="move_on_add_mode" tooltip="@.move_on_add_mode_tooltip" />
           <check text="@.select_tile_with_double_click" id="select_tile_with_double_click"
 		 pref="selection.doubleclick_select_tile" />
+          <check text="@.snap_to_grid_selection"
+                 pref="selection.snap_to_grid"/>
           <check text="@.force_rotsprite" id="force_rotsprite"
 		 pref="selection.force_rotsprite"/>
           <check text="@.multicel_when_layers_or_frames" id="multicel_when_layers_or_frames"
@@ -299,9 +303,8 @@
                  text="@.drag_and_drop_from_edges"
                  pref="timeline.drag_and_drop_from_edges" />
           <hbox>
-            <hbox expansive="true" />
+            <boxfiller />
             <button id="reset_timeline_sel" text="@general.reset" width="60" />
-            <button id="reset_timeline_sel_as_v12" text="@.reset_as_v12" />
           </hbox>
 	</vbox>
 
@@ -345,6 +348,9 @@
 
 	    <boxfiller />
 	    <colorpicker id="cursor_color" rgba="true" />
+
+            <check text="@.snap_cursor_to_grid"
+                   pref="cursor.snap_to_grid" cell_hspan="2" />
 	  </grid>
         </vbox>
 
@@ -548,8 +554,10 @@
                    pref="experimental.new_blend" />
             <link text="(#1096)" url="https://github.com/aseprite/aseprite/issues/1096" />
           </hbox>
-          <check id="native_clipboard" text="@.native_clipboard" />
-          <check id="native_file_dialog" text="@.native_file_dialog" />
+          <check id="native_clipboard" text="@.native_clipboard"
+                 pref="experimental.use_native_clipboard" />
+          <check id="native_file_dialog" text="@.native_file_dialog"
+                 pref="experimental.use_native_file_dialog" />
           <check id="tint_shade_tone_hue_with_sat_value"
                  text="@.hue_with_sat_value"
                  pref="experimental.hue_with_sat_value_for_color_selector" />

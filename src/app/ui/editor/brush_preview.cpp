@@ -166,8 +166,9 @@ void BrushPreview::show(const gfx::Point& screenPos)
   const bool isFloodfill = m_editor->getCurrentEditorTool()->getPointShape(0)->isFloodFill();
   // TODO add support for "tile-brushes"
   gfx::Rect origBrushBounds =
-    (isFloodfill || site.tilemapMode() == TilemapMode::Tiles ? gfx::Rect(0, 0, 1, 1):
-                                                               brush->bounds());
+    ((isFloodfill && brush->type() != BrushType::kImageBrushType) ||
+     site.tilemapMode() == TilemapMode::Tiles ? gfx::Rect(0, 0, 1, 1)
+                                              : brush->bounds());
   gfx::Rect brushBounds = origBrushBounds;
 
   // Cursor in the screen (view)
@@ -175,7 +176,8 @@ void BrushPreview::show(const gfx::Point& screenPos)
 
   // Get cursor position in the editor
   gfx::Point spritePos = m_editor->screenToEditor(screenPos);
-  if (m_editor->docPref().grid.snap()) {
+  if (pref.cursor.snapToGrid() &&
+      m_editor->docPref().grid.snap()) {
     spritePos = snap_to_grid(m_editor->docPref().grid.bounds(),
                              spritePos,
                              PreferSnapTo::ClosestGridVertex) +
@@ -253,6 +255,7 @@ void BrushPreview::show(const gfx::Point& screenPos)
         case app::gen::BrushPreview::FULLNEDGES:
           if (showPreview)
             showPreviewWithEdges = true;
+          m_type = BRUSH_BOUNDARIES;
           break;
       }
       break;

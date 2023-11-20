@@ -625,14 +625,15 @@ int Sprite_newTileset(lua_State* L)
     tileset = Tileset::MakeCopyCopyingImages(reference);
   }
   else {
-    Grid grid;
+    Grid grid(sprite->gridBounds().size()); // Use sprite grid bounds by default
     int ntiles = 1;
     if (!lua_isnone(L, 2)) {
       if (auto g = may_get_obj<Grid>(L, 2)) {
         grid = *g;
       }
       // Convert Rectangle into a Grid
-      else if (lua_istable(L, 2)) {
+      else if (lua_istable(L, 2) ||
+               may_get_obj<gfx::Rect>(L, 2)) {
         gfx::Rect rect = convert_args_into_rect(L, 2);
         grid = Grid(rect.size());
         grid.origin(rect.origin());
@@ -651,6 +652,14 @@ int Sprite_newTileset(lua_State* L)
         }
       }
     }
+
+    // This a limitation in our code and doesn't make too much sense
+    // to specify a different origin by default (because the origin is
+    // specified on the tilemap cel).
+    if (grid.origin() != gfx::Point(0, 0)) {
+      return luaL_error(L, "a tileset with origin different than 0,0 cannot be created");
+    }
+
     tileset = new Tileset(sprite, grid, ntiles);
   }
 

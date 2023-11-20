@@ -334,7 +334,6 @@ public:
     // Timeline
     firstFrame()->setTextf("%d", m_globPref.timeline.firstFrame());
     resetTimelineSel()->Click.connect([this]{ onResetTimelineSel(); });
-    resetTimelineSelAsV12()->Click.connect([this]{ onResetTimelineSelV12(); });
 
     // Others
     if (m_pref.general.expandMenubarOnMouseover())
@@ -417,11 +416,18 @@ public:
 
     onNativeCursorChange();
 
-    if (m_pref.experimental.useNativeClipboard())
-      nativeClipboard()->setSelected(true);
-
-    if (m_pref.experimental.useNativeFileDialog())
-      nativeFileDialog()->setSelected(true);
+    // "Show Aseprite file dialog" option is the inverse of the old
+    // experimental "use native file dialog" option
+    showAsepriteFileDialog()->setSelected(
+      !m_pref.experimental.useNativeFileDialog());
+    showAsepriteFileDialog()->Click.connect([this]{
+      nativeFileDialog()->setSelected(
+        !showAsepriteFileDialog()->isSelected());
+    });
+    nativeFileDialog()->Click.connect([this]{
+      showAsepriteFileDialog()->setSelected(
+        !nativeFileDialog()->isSelected());
+    });
 
 #ifdef _WIN32 // Show Tablet section on Windows
     {
@@ -814,8 +820,6 @@ public:
     m_pref.undo.allowNonlinearHistory(undoAllowNonlinearHistory()->isSelected());
 
     // Experimental features
-    m_pref.experimental.useNativeClipboard(nativeClipboard()->isSelected());
-    m_pref.experimental.useNativeFileDialog(nativeFileDialog()->isSelected());
     m_pref.experimental.flashLayer(flashLayer()->isSelected());
     m_pref.experimental.nonactiveLayersOpacity(nonactiveLayersOpacity()->getValue());
     m_pref.quantization.rgbmapAlgorithm(m_rgbmapAlgorithmSelector.algorithm());
@@ -1701,21 +1705,12 @@ private:
     layout();
   }
 
-  void onResetTimelineSelCommon() {
-    keepSelection()->setSelected(false);
-    selectOnClickWithKey()->setSelected(true);
-    selectOnDrag()->setSelected(true);
-    dragAndDropFromEdges()->setSelected(true);
-  }
-
   void onResetTimelineSel() {
-    onResetTimelineSelCommon();
-    selectOnClick()->setSelected(false);
-  }
-
-  void onResetTimelineSelV12() {
-    onResetTimelineSelCommon();
-    selectOnClick()->setSelected(true);
+    keepSelection()->setSelected(m_pref.timeline.keepSelection.defaultValue());
+    selectOnClick()->setSelected(m_pref.timeline.selectOnClick.defaultValue());
+    selectOnClickWithKey()->setSelected(m_pref.timeline.selectOnClickWithKey.defaultValue());
+    selectOnDrag()->setSelected(m_pref.timeline.selectOnDrag.defaultValue());
+    dragAndDropFromEdges()->setSelected(m_pref.timeline.dragAndDropFromEdges.defaultValue());
   }
 
   gfx::Rect gridBounds() const {

@@ -18,6 +18,7 @@
 #include "app/commands/commands.h"
 #include "app/commands/new_params.h"
 #include "app/commands/params.h"
+#include "app/console.h"
 #include "app/context_access.h"
 #include "app/doc_api.h"
 #include "app/find_widget.h"
@@ -170,8 +171,14 @@ void NewLayerCommand::onExecute(Context* context)
   Scoped destroyPasteDoc(
     [&pasteDoc, context]{
       if (pasteDoc) {
-        DocDestroyer destroyer(context, pasteDoc, 100);
-        destroyer.destroyDocument();
+        try {
+          DocDestroyer destroyer(context, pasteDoc, 1000);
+          destroyer.destroyDocument();
+        }
+        catch (const CannotWriteDocException& e) {
+          LOG(ERROR, "%s\n", e.what());
+          Console::showException(e);
+        }
       }
     });
 
@@ -192,6 +199,9 @@ void NewLayerCommand::onExecute(Context* context)
     // The user have selected another document.
     if (oldActiveDocument != context->activeDocument()) {
       pasteDoc = context->activeDocument();
+      if (pasteDoc)
+        pasteDoc->setInhibitBackup(true);
+
       static_cast<UIContext*>(context)
         ->setActiveDocument(oldActiveDocument);
     }
@@ -208,6 +218,7 @@ void NewLayerCommand::onExecute(Context* context)
                       context->activeSite().grid():
                       doc::Grid(params().gridBounds()));
   tilesetInfo.baseIndex = 1;
+  tilesetInfo.matchFlags = 0;   // TODO default flags?
 
 #ifdef ENABLE_UI
   // If params specify to ask the user about the name...
@@ -236,8 +247,11 @@ void NewLayerCommand::onExecute(Context* context)
 
     name = window.name()->text();
     if (tilesetSelector) {
-      pref.tileset.baseIndex(tilesetSelector->getInfo().baseIndex);
       tilesetInfo = tilesetSelector->getInfo();
+
+      // Save information for next new tilemap layers
+      pref.tileset.baseIndex(tilesetInfo.baseIndex);
+      tilesetSelector->saveAdvancedPreferences();
     }
   }
 #endif
@@ -286,6 +300,7 @@ void NewLayerCommand::onExecute(Context* context)
         if (tilesetInfo.newTileset) {
           auto tileset = new Tileset(sprite, tilesetInfo.grid, 1);
           tileset->setBaseIndex(tilesetInfo.baseIndex);
+          tileset->setMatchFlags(tilesetInfo.matchFlags);
           tileset->setName(tilesetInfo.name);
 
           auto addTileset = new cmd::AddTileset(sprite, tileset);

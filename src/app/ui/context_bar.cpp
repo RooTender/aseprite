@@ -654,12 +654,13 @@ private:
 
     m_loaded = true;
 
-    char buf[32];
+    std::string buf;
     int n = get_config_int("shades", "count", 0);
     n = std::clamp(n, 0, 256);
     for (int i=0; i<n; ++i) {
-      sprintf(buf, "shade%d", i);
-      Shade shade = shade_from_string(get_config_string("shades", buf, ""));
+      buf = fmt::format("shade{}", i);
+      Shade shade = shade_from_string(
+        get_config_string("shades", buf.c_str(), ""));
       if (shade.size() >= 2)
         m_shades.push_back(shade);
     }
@@ -669,12 +670,13 @@ private:
     if (!m_loaded)
       return;
 
-    char buf[32];
+    std::string buf;
     int n = int(m_shades.size());
     set_config_int("shades", "count", n);
     for (int i=0; i<n; ++i) {
-      sprintf(buf, "shade%d", i);
-      set_config_string("shades", buf, shade_to_string(m_shades[i]).c_str());
+      buf = fmt::format("shade{}", i);
+      set_config_string("shades", buf.c_str(),
+                        shade_to_string(m_shades[i]).c_str());
     }
   }
 
@@ -1185,9 +1187,14 @@ public:
     m_popup->setHotRegion(gfx::Region(m_popup->boundsOnScreen()));
   }
 
-  const tools::DynamicsOptions& getDynamics() const {
-    if (m_popup && m_popup->isVisible())
+  const tools::DynamicsOptions& getDynamics() {
+    if (m_popup && m_popup->isVisible()) {
       m_dynamics = m_popup->getDynamics();
+    }
+    else {
+      // Load dynamics just in case that the active tool has changed.
+      loadDynamicsPref();
+    }
     return m_dynamics;
   }
 
@@ -2167,7 +2174,7 @@ void ContextBar::updateForTool(tools::Tool* tool)
   // Show/Hide fields
   m_zoomButtons->setVisible(needZoomButtons(tool));
   m_brushBack->setVisible(supportOpacity && hasImageBrush && !withDithering);
-  m_brushType->setVisible(supportOpacity && (!isFloodfill || (isFloodfill && hasImageBrush && !withDithering)));
+  m_brushType->setVisible(supportOpacity && (!isFloodfill || (isFloodfill && !withDithering)));
   m_brushSize->setVisible(supportOpacity && !isFloodfill && !hasImageBrush);
   m_brushAngle->setVisible(supportOpacity && !isFloodfill && !hasImageBrush && hasBrushWithAngle);
   m_brushPatternField->setVisible(supportOpacity && hasImageBrush && !withDithering);

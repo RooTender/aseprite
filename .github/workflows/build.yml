@@ -19,9 +19,9 @@ jobs:
         submodules: 'recursive'
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1
-      if: runner.os == 'Linux'
+      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
       with:
-        key: ${{ matrix.os }}-${{ matrix.enable_ui }}
+        key: ${{ matrix.os }}-${{ matrix.enable_ui }}-${{ matrix.build_type }}
     - uses: turtlesec-no/get-ninja@main
     - uses: ilammy/msvc-dev-cmd@v1
       if: runner.os == 'Windows'

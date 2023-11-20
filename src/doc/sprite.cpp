@@ -25,10 +25,12 @@
 #include "doc/render_plan.h"
 #include "doc/rgbmap_rgb5a3.h"
 #include "doc/tag.h"
+#include "doc/tile_primitives.h"
 #include "doc/tilesets.h"
 
 #include <algorithm>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -119,23 +121,18 @@ Sprite::~Sprite()
   }
 }
 
-// static
-Sprite* Sprite::MakeStdSprite(const ImageSpec& spec,
-                              const int ncolors,
-                              const ImageBufferPtr& imageBuf)
+static Sprite* makeSprite(const ImageSpec& spec,
+                          const ImageRef& image,
+                          std::function<std::unique_ptr<LayerImage>(Sprite* sprite)> makeLayer,
+                          const int ncolors,
+                          const ImageBufferPtr& imageBuf)
 {
   // Create the sprite.
-  std::unique_ptr<Sprite> sprite(new Sprite(spec, ncolors));
+  std::unique_ptr<Sprite> sprite = std::make_unique<Sprite>(spec, ncolors);
   sprite->setTotalFrames(frame_t(1));
-
-  // Create the main image.
-  ImageRef image(Image::create(spec, imageBuf));
-  clear_image(image.get(), 0);
-
-  // Create the first transparent layer.
+  // Create the first layer.
   {
-    std::unique_ptr<LayerImage> layer(new LayerImage(sprite.get()));
-    layer->setName("Layer 1");
+    std::unique_ptr<LayerImage> layer = makeLayer(sprite.get());
 
     // Create the cel.
     {
@@ -152,6 +149,50 @@ Sprite* Sprite::MakeStdSprite(const ImageSpec& spec,
   }
 
   return sprite.release();
+}
+
+// static
+Sprite* Sprite::MakeStdSprite(const ImageSpec& spec,
+                              const int ncolors,
+                              const ImageBufferPtr& imageBuf)
+{
+  // Create the main image.
+  ImageRef image(Image::create(spec, imageBuf));
+  clear_image(image.get(), 0);
+
+  auto makeLayer = [](Sprite* sprite) {
+                     // Create a transparent layer.
+                     auto layer = std::make_unique<LayerImage>(sprite);
+                     layer->setName("Layer 1");
+                     return layer;
+                   };
+  return makeSprite(spec, image, makeLayer, ncolors, imageBuf);
+}
+
+// static
+Sprite* Sprite::MakeStdTilemapSpriteWithTileset(const ImageSpec& spec,
+                                                const ImageSpec& tilemapspec,
+                                                const Tileset& tileset,
+                                                const int ncolors,
+                                                const ImageBufferPtr& imageBuf)
+{
+  ASSERT(spec.colorMode() != ColorMode::TILEMAP);
+  ASSERT(tilemapspec.colorMode() == ColorMode::TILEMAP);
+
+  ImageRef image(Image::create(tilemapspec, imageBuf));
+  clear_image(image.get(), 0);
+
+  auto makeLayer = [&tileset](Sprite* sprite) {
+                     // Create a tilemap layer.
+                     // We first need to add the tileset to the sprite.
+                     sprite->tilesets()->add(
+                       Tileset::MakeCopyCopyingImages(&tileset));
+
+                     auto layer = std::make_unique<LayerTilemap>(sprite, 0);
+                     layer->setName("Tilemap 1");
+                     return layer;
+                   };
+  return makeSprite(spec, image, makeLayer, ncolors, imageBuf);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -651,47 +692,31 @@ void Sprite::pickCels(const gfx::PointF& pos,
     if (!celBounds.contains(pos))
       continue;
 
-    gfx::Point ipos;
+    color_t color = 0;
     if (image->isTilemap()) {
-      Tileset* tileset = static_cast<LayerTilemap*>(cel->layer())->tileset();
-      if (!tileset)
+      tile_index ti;
+      tile_index tf;
+      if (!get_tile_pixel(cel, pos, ti, tf, color))
         continue;
-
-      const Grid grid = cel->grid();
-
-      tile_t tile = notile;
-      gfx::Point tilePos = grid.canvasToTile(gfx::Point(pos));
-      if (image->bounds().contains(tilePos.x, tilePos.y))
-        tile = image->getPixel(tilePos.x, tilePos.y);
-      if (tile == notile)
-        continue;
-
-      image = tileset->get(tile).get();
-      if (!image)
-        continue;
-
-      gfx::Point tileStart = grid.tileToCanvas(tilePos);
-      ipos = gfx::Point(pos.x - tileStart.x,
-                        pos.y - tileStart.y);
     }
     else {
-      ipos = gfx::Point(
+      gfx::Point ipos(
         int((pos.x-celBounds.x)*image->width()/celBounds.w),
         int((pos.y-celBounds.y)*image->height()/celBounds.h));
+      if (!image->bounds().contains(ipos))
+        continue;
+
+      color = get_pixel(image, ipos.x, ipos.y);
     }
 
-    if (!image->bounds().contains(ipos))
-      continue;
-
-    const color_t color = get_pixel(image, ipos.x, ipos.y);
     bool isOpaque = true;
 
-    switch (image->pixelFormat()) {
+    switch (pixelFormat()) {
       case IMAGE_RGB:
         isOpaque = (rgba_geta(color) >= opacityThreshold);
         break;
       case IMAGE_INDEXED:
-        isOpaque = (color != image->maskColor());
+        isOpaque = (color != transparentColor());
         break;
       case IMAGE_GRAYSCALE:
         isOpaque = (graya_geta(color) >= opacityThreshold);

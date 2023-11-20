@@ -51,6 +51,7 @@ struct ImageObj {
   doc::ObjectId imageId = 0;
   doc::ObjectId celId = 0;
   doc::ObjectId tilesetId = 0;
+  doc::tile_index ti = 0;
   ImageObj(doc::Image* image)
     : imageId(image->id()) {
   }
@@ -58,9 +59,12 @@ struct ImageObj {
     : imageId(cel->image()->id())
     , celId(cel->id()) {
   }
-  ImageObj(doc::Tileset* tileset, doc::Image* image)
+  ImageObj(doc::Tileset* tileset,
+           doc::tile_index ti,
+           doc::Image* image)
     : imageId(image->id())
-    , tilesetId(tileset->id()) {
+    , tilesetId(tileset->id())
+    , ti(ti) {
   }
   ImageObj(const ImageObj&) = delete;
   ImageObj& operator=(const ImageObj&) = delete;
@@ -82,6 +86,13 @@ struct ImageObj {
   doc::Cel* cel(lua_State* L) {
     if (celId)
       return check_docobj(L, doc::get<doc::Cel>(celId));
+    else
+      return nullptr;
+  }
+
+  doc::Tileset* tileset(lua_State* L) {
+    if (tilesetId)
+      return check_docobj(L, doc::get<doc::Tileset>(tilesetId));
     else
       return nullptr;
   }
@@ -257,6 +268,14 @@ int Image_drawPixel(lua_State* L)
   else
     color = convert_args_into_pixel_color(L, 4, img->pixelFormat());
   doc::put_pixel(img, x, y, color);
+
+  // Rehash tileset
+  if (obj->tilesetId) {
+    if (doc::Tileset* ts = obj->tileset(L)) {
+      ts->incrementVersion();
+      ts->notifyTileContentChange(obj->ti);
+    }
+  }
   return 0;
 }
 
@@ -447,10 +466,29 @@ int Image_saveAs(lua_State* L)
     return luaL_error(L, "script doesn't have access to write file %s",
                       absFn.c_str());
 
-  std::unique_ptr<Sprite> sprite(Sprite::MakeStdSprite(img->spec(), 256));
-
+  std::unique_ptr<Sprite> sprite;
   std::vector<ImageRef> oneImage;
-  sprite->getImages(oneImage);
+  // If we are saving a tilemap's image, we create a sprite with a tilemap layer
+  // and the cel's layer tileset.
+  // TODO: Consider the possibility to add a "tileset" parameter to
+  // Image:saveAs{}.
+  if (cel && cel->layer()->isTilemap()) {
+    auto tileset = static_cast<LayerTilemap*>(cel->layer())->tileset();
+    auto spec = cel->sprite()->spec();
+    // Use the correct final image size, not the sprite size.
+    spec.setSize(tileset->grid().tilemapSizeToCanvas(img->spec().size()));
+    sprite.reset(Sprite::MakeStdTilemapSpriteWithTileset(spec,
+                                                         img->spec(),
+                                                         *tileset,
+                                                         256));
+    sprite->getTilemapsByTileset(sprite->tilesets()->get(0), oneImage);
+  }
+  // Create a standard sprite otherwise
+  else {
+    sprite.reset(Sprite::MakeStdSprite(img->spec(), 256));
+    sprite->getImages(oneImage);
+  }
+
   ASSERT(oneImage.size() == 1);
   if (!oneImage.empty())
     copy_image(oneImage.front().get(), img);
@@ -753,9 +791,13 @@ void push_image(lua_State* L, doc::Image* image)
   push_new<ImageObj>(L, image);
 }
 
-void push_tileset_image(lua_State* L, doc::Tileset* tileset, doc::Image* image)
+void push_tileset_image(lua_State* L, doc::Tileset* tileset, doc::tile_index ti)
 {
-  push_new<ImageObj>(L, tileset, image);
+  doc::ImageRef image = tileset->get(ti);
+  if (image)
+    push_new<ImageObj>(L, tileset, ti, image.get());
+  else
+    lua_pushnil(L);
 }
 
 doc::Image* may_get_image_from_arg(lua_State* L, int index)
@@ -775,6 +817,11 @@ doc::Image* get_image_from_arg(lua_State* L, int index)
 doc::Cel* get_image_cel_from_arg(lua_State* L, int index)
 {
   return get_obj<ImageObj>(L, index)->cel(L);
+}
+
+doc::Tileset* get_image_tileset_from_arg(lua_State* L, int index)
+{
+  return get_obj<ImageObj>(L, index)->tileset(L);
 }
 
 } // namespace script
