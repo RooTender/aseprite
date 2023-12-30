@@ -1,5 +1,5 @@
 // Aseprite
-// Copyright (C) 2018-2022  Igara Studio S.A.
+// Copyright (C) 2018-2023  Igara Studio S.A.
 // Copyright (C) 2001-2018  David Capello
 //
 // This program is distributed under the terms of
@@ -167,15 +167,7 @@ protected:
       return Editor::onProcessMessage(msg);
     }
     catch (const std::exception& ex) {
-      EditorState* state = getState().get();
-
-      Console console;
-      Console::showException(ex);
-      console.printf("\nInternal details:\n"
-        "- Message type: %d\n"
-        "- Editor state: %s\n",
-        msg->type(),
-        state ? typeid(*state).name(): "None");
+      showUnhandledException(ex, msg);
       return false;
     }
   }
@@ -594,8 +586,7 @@ bool DocView::onPaste(Context* ctx)
   auto clipboard = ctx->clipboard();
   if (clipboard->format() == ClipboardFormat::Image ||
       clipboard->format() == ClipboardFormat::Tilemap) {
-    ContextWriter writer(ctx);
-    clipboard->paste(writer, true);
+    clipboard->paste(ctx, true);
     return true;
   }
   else
