@@ -54,7 +54,7 @@ if(ENABLE_WEBP AND NOT LAF_BACKEND STREQUAL "skia")
 endif()
 
 if(NOT USE_SHARED_TINYXML)
-  add_subdirectory(tinyxml)
+  add_subdirectory(tinyxml2)
 endif()
 
 if(REQUIRE_CURL AND NOT USE_SHARED_CURL)
@@ -197,14 +197,27 @@ if(ENABLE_SCRIPTING)
     lua/lutf8lib.c)
 
   if(WIN32)
-    target_compile_definitions(lua PUBLIC LUA_USE_WINDOWS=1)
+    # LUA_USE_WINDOWS is defined in luaconf.h when we compile with _WIN32
+    #target_compile_definitions(lua PUBLIC LUA_USE_WINDOWS=1)
   elseif(APPLE)
     target_compile_definitions(lua PUBLIC LUA_USE_MACOSX=1)
   elseif(UNIX)
     target_compile_definitions(lua PUBLIC LUA_USE_LINUX=1)
   endif()
 
-  target_compile_definitions(lua PUBLIC LUA_FLOORN2I=1)
+  # Compile Lua as C++ to control errors with exceptions and have
+  # stack unwinding (i.e. calling destructors correctly).
+  if(MSVC)
+    target_compile_options(lua PRIVATE -TP)
+    target_compile_options(lualib PRIVATE -TP)
+    target_compile_options(lauxlib PRIVATE -TP)
+  else()
+    target_compile_options(lua PRIVATE -xc++)
+    target_compile_options(lualib PRIVATE -xc++)
+    target_compile_options(lauxlib PRIVATE -xc++)
+  endif()
+
+  target_compile_definitions(lua PUBLIC LUA_FLOORN2I=F2Ifloor)
   target_compile_definitions(lualib PRIVATE HAVE_SYSTEM)
   target_include_directories(lua PUBLIC lua)
   target_include_directories(lauxlib PUBLIC lua)
