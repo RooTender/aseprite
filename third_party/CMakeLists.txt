@@ -15,7 +15,7 @@ endif()
 if(NOT USE_SHARED_ZLIB)
   set(SKIP_INSTALL_ALL on)
   # Don't build zlib tests
-  set(ZLIB_TESTS OFF CACHE BOOL "Build zlib tests")
+  set(ZLIB_BUILD_EXAMPLES OFF CACHE BOOL "Enable Zlib Examples")
   add_subdirectory(zlib)
 endif()
 
@@ -54,23 +54,13 @@ if(ENABLE_WEBP AND NOT LAF_BACKEND STREQUAL "skia")
 endif()
 
 if(NOT USE_SHARED_TINYXML)
+  set(tinyxml2_BUILD_TESTING OFF CACHE BOOL "Build tests for tinyxml2")
   add_subdirectory(tinyxml2)
 endif()
 
 if(REQUIRE_CURL AND NOT USE_SHARED_CURL)
   set(BUILD_RELEASE_DEBUG_DIRS ON BOOL)
   set(BUILD_CURL_EXE OFF CACHE BOOL "Set to ON to build curl executable.")
-
-  # SSL/TLS support (use native libraries only)
-  set(CMAKE_USE_OPENSSL OFF CACHE BOOL "Use OpenSSL code. Experimental")
-  set(CMAKE_USE_LIBSSH2 OFF CACHE BOOL "Use libSSH2")
-  if(WIN32)
-    set(CMAKE_USE_SCHANNEL ON CACHE BOOL "enable Windows native SSL/TLS")
-  elseif(APPLE)
-    set(CMAKE_USE_SECTRANSP ON CACHE BOOL "enable Apple OS native SSL/TLS")
-  else()
-    # TODO Linux?
-  endif()
 
   add_subdirectory(curl)
 endif()
@@ -126,6 +116,9 @@ endif()
 add_subdirectory(json11)
 
 # libarchive
+set(HAVE_WCSCPY 1)
+set(HAVE_WCSLEN 1)
+
 set(ENABLE_WERROR OFF CACHE BOOL "Treat warnings as errors - default is ON for Debug, OFF otherwise.")
 set(ENABLE_TEST OFF CACHE BOOL "Enable unit and regression tests")
 set(ENABLE_COVERAGE OFF CACHE BOOL "Enable code coverage (GCC only, automatically sets ENABLE_TEST to ON)")

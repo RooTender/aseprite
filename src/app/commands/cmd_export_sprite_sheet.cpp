@@ -48,7 +48,7 @@
 #include "export_sprite_sheet.xml.h"
 
 #include <limits>
-#include <sstream>
+#include <string>
 
 namespace app {
 
@@ -93,20 +93,19 @@ bool ask_overwrite(const bool askFilename, const std::string& filename,
       (askDataname &&
        !dataname.empty() &&
        base::is_file(dataname))) {
-    std::stringstream text;
+    std::string text;
 
     if (base::is_file(filename))
-      text << "<<" << base::get_file_name(filename).c_str();
+      text += "<<" + base::get_file_name(filename);
 
     if (base::is_file(dataname))
-      text << "<<" << base::get_file_name(dataname).c_str();
+      text += "<<" + base::get_file_name(dataname);
 
     const int ret =
       OptionalAlert::show(
         Preferences::instance().spriteSheet.showOverwriteFilesAlert,
         1, // Yes is the default option when the alert dialog is disabled
-        fmt::format(Strings::alerts_overwrite_files_on_export_sprite_sheet(),
-                    text.str()));
+        Strings::alerts_overwrite_files_on_export_sprite_sheet(text));
     if (ret != 1)
       return false;
   }
@@ -1193,8 +1192,9 @@ public:
   ExportSpriteSheetJob(
     DocExporter& exporter,
     const Site& site,
-    const ExportSpriteSheetParams& params)
-    : Job(Strings::export_sprite_sheet_generating().c_str())
+    const ExportSpriteSheetParams& params,
+    const bool showProgress)
+    : Job(Strings::export_sprite_sheet_generating(), showProgress)
     , m_exporter(exporter)
     , m_site(site)
     , m_params(params) { }
@@ -1373,7 +1373,9 @@ void ExportSpriteSheetCommand::onExecute(Context* context)
   std::unique_ptr<Doc> newDocument;
 #ifdef ENABLE_UI
   if (context->isUIAvailable()) {
-    ExportSpriteSheetJob job(exporter, site, params);
+    ExportSpriteSheetJob job(exporter, site, params,
+                             // Progress bar can be disabled with ui=false
+                             params.ui());
     job.startJob();
     job.waitJob();
 
@@ -1386,8 +1388,10 @@ void ExportSpriteSheetCommand::onExecute(Context* context)
       statusbar->showTip(1000, Strings::export_sprite_sheet_generated());
 
     // Save the exported sprite sheet as a recent file
-    if (newDocument->isAssociatedToFile())
+    if (newDocument->isAssociatedToFile() &&
+        should_add_file_to_recents(context, params)) {
       App::instance()->recentFiles()->addRecentFile(newDocument->filename());
+    }
 
     // Copy background and grid preferences
     DocumentPreferences& newDocPref(

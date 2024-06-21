@@ -50,6 +50,13 @@ FILE* lua_user_fopen(const char* fname,
   return base::open_file_raw(fname, mode);
 }
 
+FILE* lua_user_freopen(const char* fname,
+                       const char* mode,
+                       FILE* stream)
+{
+  return base::reopen_file_raw(fname, mode, stream);
+}
+
 namespace app {
 namespace script {
 
@@ -165,6 +172,7 @@ int os_clock(lua_State* L)
 void register_app_object(lua_State* L);
 void register_app_pixel_color_object(lua_State* L);
 void register_app_fs_object(lua_State* L);
+void register_app_os_object(lua_State* L);
 void register_app_command_object(lua_State* L);
 void register_app_preferences_object(lua_State* L);
 void register_json_object(lua_State* L);
@@ -259,6 +267,7 @@ Engine::Engine()
   register_app_object(L);
   register_app_pixel_color_object(L);
   register_app_fs_object(L);
+  register_app_os_object(L);
   register_app_command_object(L);
   register_app_preferences_object(L);
   register_json_object(L);

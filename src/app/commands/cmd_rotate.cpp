@@ -32,7 +32,6 @@
 #include "doc/image.h"
 #include "doc/mask.h"
 #include "doc/sprite.h"
-#include "fmt/format.h"
 #include "ui/ui.h"
 
 namespace app {
@@ -46,8 +45,10 @@ public:
 
   RotateJob(Context* ctx, Doc* doc,
             const std::string& jobName,
-            int angle, const CelList& cels, bool rotateSprite)
-    : SpriteJob(ctx, doc, jobName)
+            int angle, const CelList& cels,
+            const bool rotateSprite,
+            const bool showProgress)
+    : SpriteJob(ctx, doc, jobName, showProgress)
     , m_cels(cels)
     , m_rotateSprite(rotateSprite) {
     m_angle = angle;
@@ -167,12 +168,18 @@ protected:
 RotateCommand::RotateCommand()
   : Command(CommandId::Rotate(), CmdRecordableFlag)
 {
+  m_ui = true;
   m_flipMask = false;
   m_angle = 0;
 }
 
 void RotateCommand::onLoadParams(const Params& params)
 {
+  if (params.has_param("ui"))
+    m_ui = params.get_as<bool>("ui");
+  else
+    m_ui = true;
+
   std::string target = params.get("target");
   m_flipMask = (target == "mask");
 
@@ -238,7 +245,7 @@ void RotateCommand::onExecute(Context* context)
     }
 
     {
-      RotateJob job(context, doc, friendlyName(), m_angle, cels, rotateSprite);
+      RotateJob job(context, doc, friendlyName(), m_angle, cels, rotateSprite, m_ui);
       job.startJob();
       job.waitJob();
     }
@@ -253,8 +260,8 @@ std::string RotateCommand::onGetFriendlyName() const
     content = Strings::commands_Rotate_Selection();
   else
     content = Strings::commands_Rotate_Sprite();
-  return fmt::format(getBaseFriendlyName(),
-                     content, base::convert_to<std::string>(m_angle));
+  return Strings::commands_Rotate(content,
+                                  base::convert_to<std::string>(m_angle));
 }
 
 Command* CommandFactory::createRotateCommand()

@@ -192,8 +192,14 @@ void ExportFileWindow::setAniDir(const doc::AniDir aniDir)
 
 void ExportFileWindow::setOutputFilename(const std::string& pathAndFilename)
 {
-  m_outputPath = base::get_file_path(pathAndFilename);
-  m_outputFilename = base::get_file_name(pathAndFilename);
+  if (base::get_file_path(m_doc->filename()).empty()) {
+    m_outputPath = base::get_file_path(pathAndFilename);
+    m_outputFilename = base::get_file_name(pathAndFilename);
+  }
+  else {
+    m_outputPath = base::get_file_path(m_doc->filename());
+    m_outputFilename = base::get_relative_path(pathAndFilename, base::get_file_path(m_doc->filename()));
+  }
 
   updateOutputFilenameEntry();
 }
@@ -250,9 +256,10 @@ void ExportFileWindow::updateAdjustResizeButton()
 
   if (adjustResize()->isVisible() != newState) {
     adjustResize()->setVisible(newState);
-    if (newState)
-      adjustResize()->setText(fmt::format(Strings::export_file_adjust_resize(),
-                                          100 * m_preferredResize));
+    if (newState) {
+      adjustResize()->setText(
+        Strings::export_file_adjust_resize(100 * m_preferredResize));
+    }
     adjustResize()->parent()->layout();
   }
 }
@@ -280,7 +287,7 @@ void ExportFileWindow::onOK()
     }
     else {
       ui::Alert::show(
-        fmt::format(Strings::alerts_unknown_output_file_format_error(), ext));
+        Strings::alerts_unknown_output_file_format_error(ext));
       return;
     }
   }

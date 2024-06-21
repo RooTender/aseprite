@@ -1,5 +1,5 @@
 // Aseprite
-// Copyright (C) 2019-2023  Igara Studio S.A.
+// Copyright (C) 2019-2024  Igara Studio S.A.
 // Copyright (C) 2001-2018  David Capello
 //
 // This program is distributed under the terms of
@@ -41,7 +41,6 @@
 #include "doc/mask.h"
 #include "doc/sprite.h"
 #include "doc/tag.h"
-#include "fmt/format.h"
 #include "ui/ui.h"
 #include "undo/undo_state.h"
 
@@ -49,8 +48,8 @@ namespace app {
 
 class SaveFileJob : public Job, public IFileOpProgress {
 public:
-  SaveFileJob(FileOp* fop)
-    : Job(Strings::save_file_saving().c_str())
+  SaveFileJob(FileOp* fop, const bool showProgressBar)
+    : Job(Strings::save_file_saving(), showProgressBar)
     , m_fop(fop)
   {
   }
@@ -239,7 +238,7 @@ void SaveFileBaseCommand::saveDocumentInBackground(
   if (resizeOnTheFly == ResizeOnTheFly::On)
     fop->setOnTheFlyScale(scale);
 
-  SaveFileJob job(fop.get());
+  SaveFileJob job(fop.get(), params().ui());
   job.showProgressWindow();
 
   if (fop->hasError()) {
@@ -257,7 +256,7 @@ void SaveFileBaseCommand::saveDocumentInBackground(
     document->impossibleToBackToSavedState();
   }
   else {
-    if (context->isUIAvailable() && params().ui())
+    if (should_add_file_to_recents(context, params()))
       App::instance()->recentFiles()->addRecentFile(filename);
 
     if (markAsSaved == MarkAsSaved::On) {
@@ -269,8 +268,7 @@ void SaveFileBaseCommand::saveDocumentInBackground(
 #ifdef ENABLE_UI
     if (context->isUIAvailable() && params().ui()) {
       StatusBar::instance()->setStatusText(
-        2000, fmt::format(Strings::save_file_saved(),
-                          base::get_file_name(filename)));
+        2000, Strings::save_file_saved(base::get_file_name(filename)));
     }
 #endif
   }
@@ -428,8 +426,7 @@ void SaveFileCopyAsCommand::onExecute(Context* context)
       int ret = OptionalAlert::show(
         Preferences::instance().exportFile.showOverwriteFilesAlert,
         1, // Yes is the default option when the alert dialog is disabled
-        fmt::format(Strings::alerts_overwrite_files_on_export(),
-                    outputFilename));
+        Strings::alerts_overwrite_files_on_export(outputFilename));
       if (ret != 1)
         goto again;
     }
@@ -494,28 +491,27 @@ void SaveFileCopyAsCommand::onExecute(Context* context)
 
   {
     RestoreVisibleLayers layersVisibility;
+    Site site = context->activeSite();
     if (context->isUIAvailable()) {
-      Site site = context->activeSite();
-
       // Selected layers to export
       calculate_visible_layers(site,
                                layers,
                                layersIndex,
                                layersVisibility);
-
-      // m_selFrames is not empty if fromFrame/toFrame parameters are
-      // specified.
-      if (m_framesSeq.empty()) {
-        // Frames sequence to export
-        FramesSequence framesSeq;
-        Tag* tag = calculate_frames_sequence(
-          site, frames, framesSeq, isPlaySubtags, aniDirValue);
-        if (tag)
-          params().tag(tag->name());
-        m_framesSeq = framesSeq;
-      }
-      m_adjustFramesByTag = false;
     }
+
+    // m_selFrames is not empty if fromFrame/toFrame parameters are
+    // specified.
+    if (m_framesSeq.empty()) {
+      // Frames sequence to export
+      FramesSequence framesSeq;
+      Tag* tag = calculate_frames_sequence(
+        site, frames, framesSeq, isPlaySubtags, aniDirValue);
+      if (tag)
+        params().tag(tag->name());
+      m_framesSeq = framesSeq;
+    }
+    m_adjustFramesByTag = false;
 
     // Set other parameters
     params().aniDir(aniDirValue);

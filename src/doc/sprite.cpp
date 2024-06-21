@@ -311,7 +311,7 @@ LayerImage* Sprite::backgroundLayer() const
 Layer* Sprite::firstLayer() const
 {
   Layer* layer = root()->firstLayer();
-  while (layer->isGroup())
+  while (layer && layer->isGroup())
     layer = static_cast<LayerGroup*>(layer)->firstLayer();
   return layer;
 }
@@ -771,6 +771,11 @@ LayerList Sprite::allTilemaps() const
   LayerList list;
   m_root->allTilemaps(list);
   return list;
+}
+
+std::string Sprite::visibleLayerHierarchyAsString() const
+{
+  return m_root->visibleLayerHierarchyAsString("");
 }
 
 CelsRange Sprite::cels() const
